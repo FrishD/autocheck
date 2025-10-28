@@ -2,7 +2,7 @@
 // init.php - Initialize application
 require_once 'auth.php';
 require_once 'user.php';
-require_once 'db.php'; // Make sure db is included
+require_once 'db.php';
 
 // Initialize authentication
 $auth = new Auth();
@@ -14,28 +14,31 @@ $user = new User();
 // --- Create default users if they don't exist ---
 $db_instance = Database::getInstance();
 
-// Check for admin user
-$adminExists = $db_instance->getRow("SELECT id FROM users WHERE email = :email", ['email' => 'admin']);
-if (!$adminExists) {
-    $user->createDirectUser([
-        'email' => 'admin',
-        'password' => 'admin123',
-        'role' => 'teacher',
-        'id_number' => '123456789',
-        'phone' => '0540000000'
-    ]);
-}
+// Only proceed if the database connection is successful and the users table exists
+if ($db_instance->isConnected() && $db_instance->tableExists('users')) {
+    // Check for admin user
+    $adminExists = $db_instance->getRow("SELECT id FROM users WHERE email = :email", ['email' => 'admin']);
+    if (!$adminExists) {
+        $user->createDirectUser([
+            'email' => 'admin',
+            'password' => 'admin123',
+            'role' => 'teacher',
+            'id_number' => '123456789',
+            'phone' => '0540000000'
+        ]);
+    }
 
-// Check for student user
-$studentExists = $db_instance->getRow("SELECT id FROM users WHERE email = :email", ['email' => 'student']);
-if (!$studentExists) {
-    $user->createDirectUser([
-        'email' => 'student',
-        'password' => 'student123',
-        'role' => 'student',
-        'id_number' => '987654321',
-        'phone' => '0520000000'
-    ]);
+    // Check for student user
+    $studentExists = $db_instance->getRow("SELECT id FROM users WHERE email = :email", ['email' => 'student']);
+    if (!$studentExists) {
+        $user->createDirectUser([
+            'email' => 'student',
+            'password' => 'student123',
+            'role' => 'student',
+            'id_number' => '987654321',
+            'phone' => '0520000000'
+        ]);
+    }
 }
 // --- End of default user creation ---
 
