@@ -1,8 +1,11 @@
 <?php
 // init.php - Initialize application
+
+// Load the configuration file first to ensure all constants are defined
+require_once __DIR__ . '/../config/config.php';
+
 require_once 'auth.php';
 require_once 'user.php';
-require_once 'db.php';
 
 // Initialize authentication
 $auth = new Auth();
@@ -12,10 +15,21 @@ $auth->startSecureSession();
 $user = new User();
 
 // --- Create default users if they don't exist ---
-$db_instance = Database::getInstance();
+// This part requires a valid database connection.
+// We add a function to check if the 'users' table exists.
+function tableExists($pdo, $table) {
+    try {
+        $result = $pdo->query("SELECT 1 FROM $table LIMIT 1");
+    } catch (Exception $e) {
+        return false;
+    }
+    return $result !== false;
+}
 
-// Only proceed if the database connection is successful and the users table exists
-if ($db_instance->isConnected() && $db_instance->tableExists('users')) {
+$db_instance = Database::getInstance();
+$pdo = $db_instance->getConnection();
+
+if ($pdo && tableExists($pdo, 'users')) {
     // Check for admin user
     $adminExists = $db_instance->getRow("SELECT id FROM users WHERE email = :email", ['email' => 'admin']);
     if (!$adminExists) {
@@ -41,7 +55,6 @@ if ($db_instance->isConnected() && $db_instance->tableExists('users')) {
     }
 }
 // --- End of default user creation ---
-
 
 // Function to get current page
 function getCurrentPage() {
