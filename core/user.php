@@ -403,4 +403,53 @@ class User {
         
         return $grades;
     }
+
+    // Create user directly without registration code or email verification
+    public function createDirectUser($userData) {
+        // Check if email already exists
+        $existingUser = $this->db->getRow(
+            "SELECT id FROM users WHERE email = :email",
+            ['email' => $userData['email']]
+        );
+
+        if ($existingUser) {
+            return [
+                'success' => false,
+                'message' => 'User with this email already exists.'
+            ];
+        }
+
+        // Hash password
+        $hashedPassword = $this->auth->hashPassword($userData['password']);
+
+        // Prepare user data for insertion
+        $insertData = [
+            'email' => $userData['email'],
+            'password' => $hashedPassword,
+            'id_number' => $userData['id_number'] ?? '000000000', // Default value
+            'phone' => $userData['phone'] ?? '0500000000', // Default value
+            'birth_date' => $userData['birth_date'] ?? '2000-01-01', // Default value
+            'role' => $userData['role'],
+            'grade' => $userData['grade'] ?? null,
+            'user_group' => $userData['user_group'] ?? null,
+            'is_active' => 1, // Active by default
+            'email_verified' => 1 // Verified by default
+        ];
+
+        // Insert user into database
+        $userId = $this->db->insert('users', $insertData);
+
+        if (!$userId) {
+            return [
+                'success' => false,
+                'message' => 'Error creating user.'
+            ];
+        }
+
+        return [
+            'success' => true,
+            'user_id' => $userId,
+            'message' => 'User created successfully.'
+        ];
+    }
 }

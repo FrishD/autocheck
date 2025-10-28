@@ -2,6 +2,7 @@
 // init.php - Initialize application
 require_once 'auth.php';
 require_once 'user.php';
+require_once 'db.php'; // Make sure db is included
 
 // Initialize authentication
 $auth = new Auth();
@@ -9,6 +10,35 @@ $auth->startSecureSession();
 
 // Initialize user manager
 $user = new User();
+
+// --- Create default users if they don't exist ---
+$db_instance = Database::getInstance();
+
+// Check for admin user
+$adminExists = $db_instance->getRow("SELECT id FROM users WHERE email = :email", ['email' => 'admin']);
+if (!$adminExists) {
+    $user->createDirectUser([
+        'email' => 'admin',
+        'password' => 'admin123',
+        'role' => 'teacher',
+        'id_number' => '123456789',
+        'phone' => '0540000000'
+    ]);
+}
+
+// Check for student user
+$studentExists = $db_instance->getRow("SELECT id FROM users WHERE email = :email", ['email' => 'student']);
+if (!$studentExists) {
+    $user->createDirectUser([
+        'email' => 'student',
+        'password' => 'student123',
+        'role' => 'student',
+        'id_number' => '987654321',
+        'phone' => '0520000000'
+    ]);
+}
+// --- End of default user creation ---
+
 
 // Function to get current page
 function getCurrentPage() {
@@ -19,27 +49,27 @@ function getCurrentPage() {
 // Function to check if user has access to current page
 function checkAccess($allowedRoles = null) {
     global $auth;
-    
+
     // Public pages - no login required
     $publicPages = ['login.php', 'register.php', 'index.php'];
     $currentPage = getCurrentPage();
-    
+
     if (in_array($currentPage, $publicPages)) {
         return true;
     }
-    
+
     // Check if user is logged in
     if (!$auth->isLoggedIn()) {
         header('Location: login.php');
         exit;
     }
-    
+
     // Check if user has required role
     if ($allowedRoles !== null && !$auth->hasRole($allowedRoles)) {
         header('Location: unauthorized.php');
         exit;
     }
-    
+
     return true;
 }
 
